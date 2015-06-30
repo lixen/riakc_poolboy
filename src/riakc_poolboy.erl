@@ -37,6 +37,9 @@
 -export([put/2]).
 -export([put/3]).
 -export([put/4]).
+-export([update_type/2]).
+-export([update_type/3]).
+-export([update_type/4]).
 -export([search/3]).
 -export([search/4]).
 -export([search/5]).
@@ -96,10 +99,24 @@ put(PoolName, Obj, Timeout) ->
 put(PoolName, Obj, Options, Timeout) ->
     exec(PoolName, {put, Obj, Options, Timeout}).
 
+-spec update_type(atom(), riakc_obj()) ->
+                  ok | {ok, riakc_obj()} | {ok, key()} | {error, term()}.
+update_type(PoolName, Obj) ->
+    exec(PoolName, {update_type, Obj}).
+-spec update_type(atom(), riakc_obj(), timeout() | put_options()) ->
+                 ok | {ok, riakc_obj()} |  riakc_obj() | {ok, key()} | {error, term()}.
+update_type(PoolName, Obj, Timeout) ->
+    exec(PoolName, {update_type, Obj, Timeout}).
+
+-spec update_type(atom(), riakc_obj(), put_options(), timeout()) ->
+                 ok | {ok, riakc_obj()} | riakc_obj() | {ok, key()} | {error, term()}.
+update_type(PoolName, Obj, Options, Timeout) ->
+    exec(PoolName, {update_type, Obj, Options, Timeout}).
+
 -spec delete(atom(), bucket(), key()) -> ok | {error, term()}.
 delete(PoolName, Bucket, Key) ->
     exec(PoolName, {delete, Bucket, Key}).
-  
+
 -spec delete(atom(), bucket(), key(), timeout() | delete_options()) ->
                     ok | {error, term()}.
 delete(PoolName, Bucket, Key, Timeout) ->
