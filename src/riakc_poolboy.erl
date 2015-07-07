@@ -2,54 +2,23 @@
 
 -include_lib("riakc/include/riakc.hrl").
 
--export([delete/3]).
--export([delete/4]).
--export([delete/5]).
--export([delete_obj/2]).
--export([delete_obj/3]).
--export([delete_obj/4]).
--export([delete_vclock/4]).
--export([delete_vclock/5]).
--export([delete_vclock/6]).
--export([get/3]).
--export([get/4]).
--export([get/5]).
--export([get_bucket/2]).
--export([get_bucket/3]).
--export([get_bucket/4]).
--export([get_index/4]).
--export([get_index/5]).
--export([get_index/6]).
--export([get_index/7]).
--export([get_server_info/1]).
--export([get_server_info/2]).
--export([list_buckets/1]).
--export([list_buckets/2]).
--export([list_buckets/3]).
--export([list_keys/2]).
--export([list_keys/3]).
--export([mapred/3]).
--export([mapred/4]).
--export([mapred/5]).
--export([mapred_bucket/3]).
--export([mapred_bucket/4]).
--export([mapred_bucket/5]).
--export([put/2]).
--export([put/3]).
--export([put/4]).
--export([update_type/2]).
--export([update_type/3]).
--export([update_type/4]).
--export([search/3]).
--export([search/4]).
--export([search/5]).
--export([search/6]).
--export([set_bucket/3]).
--export([set_bucket/4]).
--export([set_bucket/5]).
--export([start_pool/3]).
--export([stop_pool/1]).
--export([tunnel/4]).
+-export([delete/3, delete/4, delete/5]).
+-export([delete_obj/2, delete_obj/3, delete_obj/4]).
+-export([delete_vclock/4, delete_vclock/5, delete_vclock/6]).
+-export([get/3, get/4, get/5]).
+-export([fetch_type/3, fetch_type/4, fetch_type/5]).
+-export([get_bucket/2, get_bucket/3, get_bucket/4]).
+-export([get_index/4, get_index/5, get_index/6, get_index/7]).
+-export([get_server_info/1, get_server_info/2]).
+-export([list_buckets/1, list_buckets/2, list_buckets/3]).
+-export([list_keys/2, list_keys/3]).
+-export([mapred/3, mapred/4, mapred/5]).
+-export([mapred_bucket/3, mapred_bucket/4, mapred_bucket/5]).
+-export([put/2, put/3, put/4]).
+-export([update_type/2, update_type/3, update_type/4]).
+-export([search/3, search/4, search/5, search/6]).
+-export([set_bucket/3, set_bucket/4, set_bucket/5]).
+-export([start_pool/3, stop_pool/1, tunnel/4]).
 
 
 -spec start_pool(atom(), list(term()), list(term())) -> supervisor:startlink_ret().
@@ -83,6 +52,21 @@ get(PoolName, Bucket, Key, Timeout) ->
                  {ok, riakc_obj()} | {error, term()} | unchanged.
 get(PoolName, Bucket, Key, Options, Timeout) ->
     exec(PoolName, {get, Bucket, Key, Options, Timeout}).
+
+-spec fetch_type(atom(), bucket(), key()) -> {ok, riakc_obj()} | {error, term()}.
+fetch_type(PoolName, Bucket, Key) ->
+    exec(PoolName, {fetch_type, Bucket, Key}).
+
+-spec fetch_type(atom(), bucket(), key(), timeout() |  get_options()) ->
+                 {ok, riakc_obj()} | {error, term()} | unchanged.
+fetch_type(PoolName, Bucket, Key, Timeout) ->
+    exec(PoolName, {fetch_type, Bucket, Key, Timeout}).
+
+-spec fetch_type(atom(), bucket(), key(), get_options(), timeout()) ->
+                 {ok, riakc_obj()} | {error, term()} | unchanged.
+fetch_type(PoolName, Bucket, Key, Options, Timeout) ->
+    exec(PoolName, {fetch_type, Bucket, Key, Options, Timeout}).
+
 
 -spec put(atom(), riakc_obj()) ->
                  ok | {ok, riakc_obj()} | {ok, key()} | {error, term()}.
@@ -315,15 +299,23 @@ stat(T) when is_tuple(T) andalso
               element(1, T) =:= get_bucket orelse
               element(1, T) =:= set_bucket orelse
               element(1, T) =:= mapred_bucket orelse
+              element(1, T) =:= update_type orelse
+              element(1, T) =:= fetch_type orelse
               element(1, T) =:= get_index) ->
     Op = element(1, T),
-    Bucket = element(2, T),
-    [atom_to_binary(Op, latin1), <<".">>, Bucket];
+    Bucket = bucket_type(element(2, T)),
+    [atom_to_binary(Op, latin1), <<".">> | Bucket];
 stat(Op) when is_atom(Op) ->
     [atom_to_binary(Op, latin1)];
 stat(T) when is_tuple(T) ->
     Op = element(1, T),
     [atom_to_binary(Op, latin1)].
+
+bucket_type({BucketType, Bucket}) ->
+  [BucketType, <<".">>, Bucket];
+
+bucket_type(Bucket) ->
+  [Bucket].
 
 histogram_timed_notify({Name, _} = Metric) ->
      try
